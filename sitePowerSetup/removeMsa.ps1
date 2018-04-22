@@ -5,7 +5,8 @@ function Remove-MSA {
     )
 
     try {
-        Remove-ADServiceAccount $AccountName -Confirm:$false
+        $msa = Get-ADServiceAccount -Filter "samAccountName -eq '$AccountName$' "
+        Remove-ADServiceAccount $msa -Confirm:$false
     }
     catch {
         if ($_.CategoryInfo -ne $null) {

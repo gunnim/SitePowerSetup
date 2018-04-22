@@ -1,8 +1,11 @@
-function Invoke-IISSetup {
+function New-IISSetup {
     param (
-        [switch] $Silent,
-        [string] $AppName = $( Read-Host "Web Application Name" ),
-        [string] $AccountName = $AppName
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $AppName = $( Read-Host "Web application name" ),
+        
+        [string] $AccountName = $AppName,
+        [switch] $Silent
     )
 
     $ErrorActionPreference = 
@@ -18,12 +21,16 @@ function Invoke-IISSetup {
             New-WebAppPool $AppName
         }
         catch {
-            if ($_.Exception.ErrorCode -eq -2147024713) {
-                Write-Warning "ApplicationPool with name $AppName already exists"
+            if (($_.Exception.PSObject.Properties.name -match 'ErrorCode' `
+            -and $_.Exception.ErrorCode -eq -2147024713) `
+            `
+            -or $_.CategoryInfo.Category -eq [System.Management.Automation.ErrorCategory]::InvalidArgument) {
+                if (-Not $Silent) {
+                    Write-Warning "ApplicationPool with name $AppName already exists"
+                }
             }
             else {
-                Write-Host $_ -ForegroundColor Red
-                break
+                throw $_
             }
         }
 
@@ -42,7 +49,10 @@ function Invoke-IISSetup {
                 -HostHeader "$AppName.$DefaultBindingSuffix"
         }
         catch {
-            if ($_.Exception.ErrorCode -eq -2147024713) {
+            if (($_.Exception.PSObject.Properties.name -match 'ErrorCode' `
+            -and $_.Exception.ErrorCode -eq -2147024713) `
+            `
+            -or $_.Exception.HResult -eq -2147024809) {
                 if (-Not $Silent) {
                     Write-Warning "IIS site with name $AppName already exists"
                 }
@@ -53,7 +63,7 @@ function Invoke-IISSetup {
         }
         
         if (-Not $Silent) {
-            Write-Host 'Successfully created IIS site and AppPool' -foreGroundColor green
+            Write-Host 'Successfully ensured IIS site and AppPool' -foreGroundColor green
         }
     }
     else {

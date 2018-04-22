@@ -17,39 +17,32 @@
 #.PARAMETER DatabaseName
 # Optional database name, defaults to AppName
 #
-#.PARAMETER Uninstall
-# Remove a previous power setup
-#
 #.EXAMPLE
 # Invoke-WebAppSetup MyWebApp
 #
 #.NOTES
 #General notes
 ##############################
-function Invoke-SitePowerSetup {
-[Alias("New-Site", "New-App")]
+function New-SitePowerSetup {
+    [Alias("New-Site", "New-App")]
 
     param (
-        [switch] $Silent,
-        [string] $AppName = $( Read-Host "Web application name" ),
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $AppName = $( Read-Host "Web application name" ),
+
         [string] $AccountName = $AppName,
         [string] $DatabaseName = $AppName,
-        [switch] $Uninstall
+
+        [switch] $Silent
     )
 
     $ErrorActionPreference = 
         [System.Management.Automation.ActionPreference]::Stop
 
+    Test-Sqlcmd
     Test-IISInstallation
     Test-AdminRights
-
-    if ($Uninstall) {
-        return Remove-Site `
-            -Silent:$Silent `
-            -AppName $AppName `
-            -AccountName $AccountName `
-            -DatabaseName $DatabaseName
-    }
 
     if (-Not $Silent) {
         Write-Host 'Preparing to install Managed Service Account' -foreGroundColor green
@@ -83,4 +76,3 @@ function Invoke-SitePowerSetup {
         -AccountName $AccountName `
         -Silent:$Silent
 }
-

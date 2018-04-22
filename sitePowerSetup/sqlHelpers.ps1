@@ -30,6 +30,9 @@ function Remove-Database {
     )
 
     try {
+        if ($Silent) {
+            Invoke-Sqlcmd -ServerInstance $SqlServer -Query "ALTER DATABASE [$DatabaseName] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;"
+        }
         Invoke-Sqlcmd -ServerInstance $SqlServer -Query "DROP DATABASE [$DatabaseName]"
     }
     catch {
@@ -38,6 +41,15 @@ function Remove-Database {
                 if (-Not $Silent) {
                     Write-Warning "Database [$DatabaseName] on $SqlServer not found"
                 }
+                return
+            }
+            elseIf ($_.Exception.InnerException.Number -eq 3702) {
+                Write-Warning 'Database currently in use, continuing will forcibly disconnect current sessions!'
+                Write-Warning 'Press Enter to continue, ^C to exit'
+                Read-Host
+            
+                Invoke-Sqlcmd -ServerInstance $SqlServer -Query "ALTER DATABASE [$DatabaseName] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;"
+                Invoke-Sqlcmd -ServerInstance $SqlServer -Query "DROP DATABASE [$DatabaseName]"
                 return
             }
         }

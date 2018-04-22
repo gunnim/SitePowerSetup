@@ -21,10 +21,13 @@
 # If an MSA is created, the script will execute Sync-ADObject to ensure that the target IIS servers can see the object.
 # If the MSA already exists in AD, we assume it was created with this script and has therefore already been setup on the configured IIS servers.
 ##############################
-function Invoke-MsaSetup {
+function New-MsaSetup {
     param (
         [switch] $Silent,
-        [string] $AccountName = $( Read-Host "Service account name" )
+
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $AccountName = $( Read-Host "Service account name" )
     )
 
 	$ErrorActionPreference = 
@@ -38,14 +41,16 @@ function Invoke-MsaSetup {
 	}
 	
 	$adDomain = Get-ADDomain
-    $MSAFQDN = $AccountName + $adDomain.DNSRoot
+    $curDC = Get-ADDomainController
+    $MSAFQDN = "$AccountName." + $adDomain.DNSRoot
 
     $accountExists = $False
     try {
         New-ADServiceAccount `
-            -name $AccountName `
+            -Name $AccountName `
             -DNSHostName $MSAFQDN `
-            -PrincipalsAllowedToRetrieveManagedPassword $MSAGroupName
+            -PrincipalsAllowedToRetrieveManagedPassword $MSAGroupName `
+            -Server $curDC
     }
     catch {
 		if (-Not $Silent) {
@@ -54,22 +59,25 @@ function Invoke-MsaSetup {
 		$accountExists = $True
     }
 
-    Install-ADServiceAccount $AccountName
 
+    $msa = Get-ADServiceAccount -Filter "samAccountName -eq '$AccountName$' "
+    
+    # If the account already exists, we assume it was created with this script and has already been synced across the domain
     if (-Not $accountExists) {
-        $msa = Get-ADServiceAccount $AccountName
-        $curDC = Get-ADDomainController
         Get-ADDomainController `
-            -filter { HostName -ne $curDC.HostName } | 
-            ForEach-Object {
-            Sync-ADObject -Object $msa `
-                -source $curDC.HostName `
+            -Filter { HostName -ne $curDC.HostName } | 
+        ForEach-Object {
+            Sync-ADObject `
+                -Object $msa `
+                -Source $curDC.HostName `
                 -Destination $_.hostname
         } 
-
+        
         Invoke-Command `
             -ComputerName $IISServers `
             -ScriptBlock {param($p1) Install-ADServiceAccount $p1} `
             -ArgumentList $AccountName
     }
+    
+    Install-ADServiceAccount $msa
 }

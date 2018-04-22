@@ -1,12 +1,16 @@
-﻿function Invoke-SqlSetup {
+﻿function New-SqlSetup {
     param (
-        [switch] $Silent,
-        [string] $AccountName = $( Read-Host "Service account name" ),
-        [string] $DatabaseName = $AccountName
+        [ValidateNotNullOrEmpty()]
+        [string]
+        $AccountName = $( Read-Host "Service account name" ),
+
+        [string] $DatabaseName = $AccountName,
+        [switch] $Silent
     )
 
     $ErrorActionPreference = 
         [System.Management.Automation.ActionPreference]::Stop
+    Test-Sqlcmd
     Test-AdminRights
 
     foreach ($sqlServer in $SqlDatabaseServers) {

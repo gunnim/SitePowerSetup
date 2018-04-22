@@ -50,7 +50,7 @@ function New-SitePowerSetup {
         Read-Host
     }
 
-    Invoke-MsaSetup `
+    New-MsaSetup `
         -AccountName $AccountName `
         -Silent:$Silent
 
@@ -60,7 +60,7 @@ function New-SitePowerSetup {
         Read-Host
     }
 
-    Invoke-SqlSetup `
+    New-SqlSetup `
         -AccountName $AccountName `
         -DatabaseName $DatabaseName `
         -Silent:$Silent
@@ -71,7 +71,7 @@ function New-SitePowerSetup {
         Read-Host
     }
 
-    Invoke-IISSetup `
+    New-IISSetup `
         -AppName $AppName `
         -AccountName $AccountName `
         -Silent:$Silent

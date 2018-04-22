@@ -13,7 +13,7 @@
 #Parameter description
 #
 #.EXAMPLE
-# Invoke-MsaSetup myMsaAccount
+# New-MsaSetup myMsaAccount
 
 #.NOTES
 # This script requires administrative rights and remote server administration tools.
@@ -37,7 +37,7 @@ function New-MsaSetup {
     Install-RsatTools
 
 	if (-Not $Silent) {
-		Write-host "Creating gMSA" -foregroundcolor green
+		Write-Host "Creating gMSA" -foregroundcolor green
 	}
 	
 	$adDomain = Get-ADDomain
@@ -59,10 +59,10 @@ function New-MsaSetup {
 		$accountExists = $True
     }
 
-
-    $msa = Get-ADServiceAccount -Filter "samAccountName -eq '$AccountName$' "
+    $msa = Get-ADServiceAccount -Filter "samAccountName -eq '$AccountName$' " -Server $curDC
     
-    # If the account already exists, we assume it was created with this script and has already been synced across the domain
+    # If the account already exists, we assume it was created with this script and 
+    # has already been synced across the domain
     if (-Not $accountExists) {
         Get-ADDomainController `
             -Filter { HostName -ne $curDC.HostName } | 
@@ -71,13 +71,13 @@ function New-MsaSetup {
                 -Object $msa `
                 -Source $curDC.HostName `
                 -Destination $_.hostname
-        } 
+        }
         
         Invoke-Command `
             -ComputerName $IISServers `
-            -ScriptBlock {param($p1) Install-ADServiceAccount $p1} `
-            -ArgumentList $AccountName
+            -ScriptBlock {param($p1) Install-ADServiceAccount -Identity $p1} `
+            -ArgumentList $msa.DistinguishedName
     }
     
-    Install-ADServiceAccount $msa
+    Install-ADServiceAccount -Identity $msa
 }

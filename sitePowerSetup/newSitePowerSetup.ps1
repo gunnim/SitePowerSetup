@@ -24,55 +24,67 @@
 #General notes
 ##############################
 function New-SitePowerSetup {
+    [CmdletBinding(SupportsShouldProcess)]
     [Alias("New-Site", "New-App")]
-
     param (
+        [Parameter(ValueFromPipeline,
+                   ValueFromPipelineByPropertyName,
+                   Position=0)]
         [ValidateNotNullOrEmpty()]
+        [Alias("Site", "Name")]
         [string]
         $AppName = $( Read-Host "Web application name" ),
 
-        [string] $AccountName = $AppName,
-        [string] $DatabaseName = $AppName,
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [ValidateNotNullOrEmpty()]
+        [PSDefaultValue(Help = 'Uses AppName by default')]
+        [string]
+        $AccountName = $AppName,
+        
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [ValidateNotNullOrEmpty()]
+        [PSDefaultValue(Help = 'Uses AppName by default')]
+        [string]
+        $DatabaseName = $AppName,
 
-        [switch] $Silent
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Path", "Directory", "Folder")]
+        [string]
+        $PhysicalPath,
+
+        [switch] $Quiet
     )
 
-    $ErrorActionPreference = 
+    Begin {
+        $ErrorActionPreference = 
         [System.Management.Automation.ActionPreference]::Stop
 
-    Test-Sqlcmd
-    Test-IISInstallation
-    Test-AdminRights
-
-    if (-Not $Silent) {
-        Write-Host 'Preparing to install Managed Service Account' -foreGroundColor green
-        Write-Host 'Press Enter to continue, ^C to exit' -ForeGroundColor green
-        Read-Host
+        Test-Sqlcmd
+        Test-IISInstallation
+        Test-AdminRights
     }
 
-    New-MsaSetup `
-        -AccountName $AccountName `
-        -Silent:$Silent
+    Process {
+        Write-Verbose 'Preparing to install Managed Service Account'
+    
+        New-MsaSetup -AccountName $AccountName -Quiet:$Quiet
+    
+        Write-Verbose 'Preparing to create SQL databases, logins and users'
+    
+        New-SqlSetup `
+            -AccountName $AccountName `
+            -DatabaseName $DatabaseName `
+            -Quiet:$Quiet
+    
+        Write-Verbose 'Preparing to create IIS site + AppPool'
+    
+        New-IISSetup `
+            -AppName $AppName `
+            -AccountName $AccountName `
+            -PhysicalPath $PhysicalPath `
+            -Quiet:$Quiet
 
-    if (-Not $Silent) {
-        Write-Host 'Preparing to create SQL databases, logins and users' -foreGroundColor green
-        Write-Host 'Press Enter to continue, ^C to exit' -ForeGroundColor green
-        Read-Host
+        Write-Verbose "Successfully ensured existence of MSA, Sql data and IIS Site + AppPool for $AppName"
     }
-
-    New-SqlSetup `
-        -AccountName $AccountName `
-        -DatabaseName $DatabaseName `
-        -Silent:$Silent
-
-    if (-Not $Silent) {
-        Write-Host 'Preparing to create IIS site + AppPool' -foreGroundColor green
-        Write-Host 'Press Enter to continue, ^C to exit' -ForeGroundColor green
-        Read-Host
-    }
-
-    New-IISSetup `
-        -AppName $AppName `
-        -AccountName $AccountName `
-        -Silent:$Silent
 }

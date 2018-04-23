@@ -7,14 +7,14 @@
 ##############################
 function Install-RsatTools {
     param (
-        [switch] $Silent
+        [switch] $Quiet
     )
 
     # Check for RSAT tools existence
     $doesExistCmd = Get-Command New-ADServiceAccount -ErrorAction SilentlyContinue
     
     if (-Not $doesExistCmd) {
-        if (-Not $Silent) {
+        if (-Not $Quiet) {
             Write-Host 'Installation of Windows Remote Server Administration Tools may require a restart!' -foreGroundColor green
             Write-Host 'Press Enter to continue, ^C to exit' -ForeGroundColor green
             Read-Host

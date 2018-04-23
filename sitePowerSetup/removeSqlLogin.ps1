@@ -1,17 +1,20 @@
 function Remove-SqlLogin {
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     param (
-        [switch] $Silent,
+        [switch] $Quiet,
         [string] $SqlServer, 
         [string] $SqlLogin
     )
     try {
-        Invoke-Sqlcmd -ServerInstance $SqlServer -Query "DROP LOGIN [$Env:USERDOMAIN\$SqlLogin$]" -Database "master"
+        if ($PSCmdlet.ShouldProcess("Drop login $Env:USERDOMAIN\$SqlLogin on $SqlServer ?")) {
+            Invoke-Sqlcmd -ServerInstance $SqlServer -Query "DROP LOGIN [$Env:USERDOMAIN\$SqlLogin$]" -Database "master"
+        }
     }
     catch {
         if ($_.Exception.InnerException -ne $null) {
             if ($_.Exception.InnerException.Number -eq 15151 `
             -Or $_.Exception.InnerException.Number -eq 15401 ) {
-                if (-Not $Silent) {
+                if (-Not $Quiet) {
                     Write-Warning "Login [$Env:USERDOMAIN\$SqlLogin$] not found on $SqlServer"
                 }
                 return

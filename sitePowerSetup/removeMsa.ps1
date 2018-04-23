@@ -1,27 +1,41 @@
 function Remove-MSA {
+    [CmdletBinding(SupportsShouldProcess, 
+        ConfirmImpact = 'Medium')]
     param (
-        [switch] $Silent,
+        [switch] $Quiet,
         [string] $AccountName
     )
 
-    try {
-        $msa = Get-ADServiceAccount -Filter "samAccountName -eq '$AccountName$' "
-
-        if ($msa -ne $null) {
-            Remove-ADServiceAccount $msa -Confirm:$false
-        }
-        elseIf (-Not $Silent) {
-            Write-Warning "MSA $AccountName not found in AD"
+    Begin {
+        # We do this to allow Quiet to silence Remove-AdServiceAccount without 
+        # disabling the -WhatIf param
+        if (-Not $WhatIfPreference -and $Quiet) {
+            $ConfirmPreference = 'None'
         }
     }
-    catch {
-        if ($_.CategoryInfo.Category -eq [System.Management.Automation.ErrorCategory]::ObjectNotFound) {
-            if (-Not $Silent) {
+
+    Process {
+
+        try {
+            $msa = Get-ADServiceAccount -Filter "samAccountName -eq '$AccountName$' "
+    
+            if ($msa -ne $null -and
+            $PSCmdlet.ShouldProcess("Remove-ADServiceAccount $AccountName ?")) {
+                Remove-ADServiceAccount $msa -Confirm:$False
+            }
+            elseIf ($msa -eq $null -and (-Not $Quiet)) {
                 Write-Warning "MSA $AccountName not found in AD"
             }
-            return
         }
-
-        throw $_
+        catch {
+            if ($_.CategoryInfo.Category -eq [System.Management.Automation.ErrorCategory]::ObjectNotFound) {
+                if (-Not $Quiet) {
+                    Write-Warning "MSA $AccountName not found in AD"
+                }
+                return
+            }
+    
+            throw $_
+        }
     }
 }

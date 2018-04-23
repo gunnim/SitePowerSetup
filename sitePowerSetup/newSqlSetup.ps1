@@ -1,31 +1,54 @@
 ﻿function New-SqlSetup {
-    param (
+    [CmdletBinding(SupportsShouldProcess)]
+    Param (
+        [Parameter(ValueFromPipeline,
+                   ValueFromPipelineByPropertyName,
+                   Position=0)]
         [ValidateNotNullOrEmpty()]
+        [Alias("Name")]
         [string]
         $AccountName = $( Read-Host "Service account name" ),
 
-        [string] $DatabaseName = $AccountName,
-        [switch] $Silent
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [ValidateNotNullOrEmpty()]
+        [PSDefaultValue(Help = 'Uses AccountName by default')]
+        [string]
+        $DatabaseName = $AccountName,
+
+        [switch] $Quiet
     )
 
-    $ErrorActionPreference = 
+    Begin {
+        $ErrorActionPreference = 
         [System.Management.Automation.ActionPreference]::Stop
-    Test-Sqlcmd
-    Test-AdminRights
-
-    foreach ($sqlServer in $SqlDatabaseServers) {
-        New-Database -SqlServer $sqlServer -DatabaseName $DatabaseName -Silent:$Silent
-        New-SqlLogin -SqlLogin $AccountName -SqlServer $sqlServer -Silent:$Silent
-        New-SqlUser -SqlUser $AccountName -SqlServer $sqlServer -Database $DatabaseName -Silent:$Silent
-        if (-Not $Silent) {
-            Write-Host "Ensured sql database, login & user on $sqlServer" -foreGroundColor green
-        }
+        Test-Sqlcmd
+        Test-AdminRights
     }
 
-    foreach ($sqlServer in $SqlLoginServers) {
-        New-SqlLogin -SqlLogin $AccountName -SqlServer $sqlServer -Silent:$Silent
-        if (-Not $Silent) {
-            Write-Host "Ensured sql login on $sqlServer" -foreGroundColor green
+    Process {
+        foreach ($sqlServer in $SqlDatabaseServers) {
+            New-Database `
+                -SqlServer $sqlServer `
+                -DatabaseName $DatabaseName `
+                -Quiet:$Quiet
+            New-SqlLogin `
+                -SqlLogin $AccountName `
+                -SqlServer $sqlServer `
+                -Quiet:$Quiet
+            New-SqlUser `
+                -SqlUser $AccountName `
+                -SqlServer $sqlServer `
+                -Database $DatabaseName `
+                -Quiet:$Quiet
+            Write-Verbose "Ensured sql database, login & user on $sqlServer"
+        }
+    
+        foreach ($sqlServer in $SqlLoginServers) {
+            New-SqlLogin `
+                -SqlLogin $AccountName `
+                -SqlServer $sqlServer `
+                -Quiet:$Quiet
+            Write-Verbose "Ensured sql login on $sqlServer"
         }
     }
 }

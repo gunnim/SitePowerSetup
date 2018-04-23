@@ -18,8 +18,9 @@ $script:MSAGroupName = 'IIS Servers'
 . $PSScriptRoot\installRsatTools.ps1
 . $PSScriptRoot\newIISSetup.ps1
 . $PSScriptRoot\newMsaSetup.ps1
-. $PSScriptRoot\newSqlSetup.ps1
 . $PSScriptRoot\newSitePowerSetup.ps1
+. $PSScriptRoot\newSqlSetup.ps1
+. $PSScriptRoot\removeDatabase.ps1
 . $PSScriptRoot\removeIIS.ps1
 . $PSScriptRoot\removeMsa.ps1
 . $PSScriptRoot\removeSitePowerSetup.ps1

@@ -1,11 +1,29 @@
 function Remove-SitePowerSetup {
+    [CmdletBinding(SupportsShouldProcess)]
     [Alias("Remove-Site", "Remove-App")]
 
     Param (
-        [switch] $Silent,
-        [string] $AppName = $( Read-Host "Web application name" ),
-        [string] $AccountName = $AppName,
-        [string] $DatabaseName = $AppName
+        [Parameter(ValueFromPipeline,
+                   ValueFromPipelineByPropertyName,
+                   Position=0)]
+        [ValidateNotNullOrEmpty()]
+        [Alias("Site", "Name")]
+        [string]
+        $AppName = $( Read-Host "Web application name" ),
+        
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [ValidateNotNullOrEmpty()]
+        [PSDefaultValue(Help = 'Uses AppName by default')]
+        [string]
+        $AccountName = $AppName,
+        
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [ValidateNotNullOrEmpty()]
+        [PSDefaultValue(Help = 'Uses AppName by default')]
+        [string]
+        $DatabaseName = $AppName,
+
+        [switch] $Quiet
     )
 
     Begin {
@@ -18,50 +36,37 @@ function Remove-SitePowerSetup {
     }
 
     Process {
-        if (-Not $Silent) {
-            Write-Host 'Preparing to remove Managed Service Account' -foreGroundColor green
-            Write-Host 'Press Enter to continue, ^C to exit' -ForeGroundColor green
-            Read-Host
-        }
+        Write-Verbose 'Preparing to remove Managed Service Account'
     
-        Remove-MSA -AccountName $AccountName -Silent:$Silent
+        Remove-MSA -AccountName $AccountName -Quiet:$Quiet
     
-        if (-Not $Silent) {
-            Write-Host 'Preparing to remove SQL login & database' -foreGroundColor green
-            Write-Host 'Press Enter to continue, ^C to exit' -ForeGroundColor green
-            Read-Host
-        }
+        Write-Verbose 'Preparing to remove SQL login & database'
     
         foreach ($sqlServer in $SqlDatabaseServers) {
             Remove-Database `
                 -SqlServer $sqlServer `
                 -DatabaseName $DatabaseName `
-                -Silent:$Silent
+                -Quiet:$Quiet
             Remove-SqlLogin `
                 -SqlLogin $AccountName `
                 -SqlServer $sqlServer `
-                -Silent:$Silent
+                -Quiet:$Quiet
         }
     
         foreach ($sqlServer in $SqlLoginServers) {
             Remove-SqlLogin `
                 -SqlLogin $AccountName `
                 -SqlServer $sqlServer `
-                -Silent:$Silent
+                -Quiet:$Quiet
         }
     
-        if (-Not $Silent) {
-            Write-Host "Removed SQL data" -foreGroundColor green
-        }
+        Write-Verbose "Ensured non-existence of sql data"
     
+        Write-Verbose 'Preparing to remove IIS site + AppPool'
     
-        if (-Not $Silent) {
-            Write-Host 'Preparing to remove IIS site + AppPool' -foreGroundColor green
-            Write-Host 'Press Enter to continue, ^C to exit' -ForeGroundColor green
-            Read-Host
-        }
-    
-        Remove-WebAppPoolHelper -AppName $AppName -Silent:$Silent
-        Remove-WebSiteHelper -AppName $AppName -Silent:$Silent
+        Remove-WebAppPoolHelper -AppName $AppName -Quiet:$Quiet
+        Remove-WebSiteHelper -AppName $AppName -Quiet:$Quiet
+
+        Write-Verbose "Successfully ensured non-existence of MSA, Sql data and IIS Site + AppPool for $AppName"
     }
 }

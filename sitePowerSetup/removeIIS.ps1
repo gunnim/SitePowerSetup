@@ -1,6 +1,6 @@
 function Remove-WebAppPoolHelper {
     param (
-        [switch] $Silent,
+        [switch] $Quiet,
         [string] $AppName
     )
 
@@ -9,10 +9,10 @@ function Remove-WebAppPoolHelper {
     }
     catch {
         if ($_.CategoryInfo.Category -eq [System.Management.Automation.ErrorCategory]::ObjectNotFound) {
-            if (-Not $Silent) {
+            if (-Not $Quiet) {
                 Write-Warning "IIS AppPool $AppName not found"
-                return
             }
+            return
         }
         throw $_
     }
@@ -20,7 +20,7 @@ function Remove-WebAppPoolHelper {
 
 function Remove-WebSiteHelper {
     param (
-        [switch] $Silent,
+        [switch] $Quiet,
         [string] $AppName
     )
 
@@ -29,10 +29,10 @@ function Remove-WebSiteHelper {
     }
     catch {
         if ($_.CategoryInfo.Category -eq [System.Management.Automation.ErrorCategory]::ObjectNotFound) {
-            if (-Not $Silent) {
+            if (-Not $Quiet) {
                 Write-Warning "IIS Site $AppName not found"
-                return
             }
+            return
         }
 
         throw $_

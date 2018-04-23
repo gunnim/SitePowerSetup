@@ -1,17 +1,20 @@
 function New-Database {
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Low')]
     param (
-        [switch] $Silent,
+        [switch] $Quiet,
         [string] $SqlServer, 
         [string] $DatabaseName
     )
 
     try {
-        Invoke-Sqlcmd -ServerInstance $SqlServer -Query "CREATE DATABASE [$DatabaseName]"
+        if ($PSCmdlet.ShouldProcess("Create new database $DatabaseName on $SqlServer ?")) {
+            Invoke-Sqlcmd -ServerInstance $SqlServer -Query "CREATE DATABASE [$DatabaseName]"
+        }
     }
     catch {
         if ($_.Exception.InnerException -ne $null) {
             if ($_.Exception.InnerException.Number -eq 1801) {
-                if (-Not $Silent) {
+                if (-Not $Quiet) {
                     Write-Warning "Database [$DatabaseName] on $SqlServer already present"
                 }
                 return
@@ -22,56 +25,26 @@ function New-Database {
     }
 }
 
-function Remove-Database {
-    param (
-        [switch] $Silent,
-        [string] $SqlServer, 
-        [string] $DatabaseName
+function New-SqlLogin {
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Low')]
+    Param (
+        [Alias("AccountName")]
+        [string]
+        $SqlLogin,
+
+        [string] $SqlServer,
+        [switch] $Quiet
     )
 
     try {
-        if ($Silent) {
-            Invoke-Sqlcmd -ServerInstance $SqlServer -Query "ALTER DATABASE [$DatabaseName] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;"
+        if ($PSCmdlet.ShouldProcess("Create login $Env:USERDOMAIN\$SqlLogin$ on $SqlServer ?")) {
+            Invoke-Sqlcmd -ServerInstance $SqlServer -Query "create login [$Env:USERDOMAIN\$SqlLogin$] FROM WINDOWS" -Database "master"
         }
-        Invoke-Sqlcmd -ServerInstance $SqlServer -Query "DROP DATABASE [$DatabaseName]"
-    }
-    catch {
-        if ($_.Exception.InnerException -ne $null) {
-            if ($_.Exception.InnerException.Number -eq 3701) {
-                if (-Not $Silent) {
-                    Write-Warning "Database [$DatabaseName] on $SqlServer not found"
-                }
-                return
-            }
-            elseIf ($_.Exception.InnerException.Number -eq 3702) {
-                Write-Warning 'Database currently in use, continuing will forcibly disconnect current sessions!'
-                Write-Warning 'Press Enter to continue, ^C to exit'
-                Read-Host
-            
-                Invoke-Sqlcmd -ServerInstance $SqlServer -Query "ALTER DATABASE [$DatabaseName] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;"
-                Invoke-Sqlcmd -ServerInstance $SqlServer -Query "DROP DATABASE [$DatabaseName]"
-                return
-            }
-        }
-
-        throw $_
-    }
-}
-
-function New-SqlLogin  {
-    param (
-        [switch] $Silent,
-        [string] $SqlLogin,
-        [string] $SqlServer
-    )
-
-    try {
-        Invoke-Sqlcmd -ServerInstance $SqlServer -Query "create login [$Env:USERDOMAIN\$SqlLogin$] FROM WINDOWS" -Database "master"
     }
     catch {
         if ($_.Exception.InnerException -ne $null) {
             if ($_.Exception.InnerException.Number -eq 15025) {
-                if (-Not $Silent) {
+                if (-Not $Quiet) {
                     Write-Warning "Login [$Env:USERDOMAIN\$SqlLogin$] already present on $SqlServer"
                 }
                 return
@@ -83,28 +56,34 @@ function New-SqlLogin  {
 }
 
 function New-SqlUser {
-    param (
-        [switch] $Silent,
-        [string] $SqlUser,
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Low')]
+    Param (
+        [Alias("AccountName")]
+        [string]
+        $SqlUser,
+
         [string] $SqlServer,
-        [string] $Database
+        [string] $DatabaseName,
+        [switch] $Quiet
     )
     
     try {
-        Invoke-Sqlcmd `
-            -ServerInstance $SqlServer `
-            -Query "create user [$Env:USERDOMAIN\$SqlUser$] for login [$Env:USERDOMAIN\$SqlUser$] WITH DEFAULT_SCHEMA=[dbo];" `
-            -Database $Database
-        Invoke-Sqlcmd `
-            -ServerInstance $SqlServer `
-            -Query "exec sp_addrolemember 'db_owner', '$Env:USERDOMAIN\$SqlUser$';" `
-            -Database $Database
+        if ($PSCmdlet.ShouldProcess("Create user $Env:USERDOMAIN\$SqlUser$ on $SqlServer ?")) {
+            Invoke-Sqlcmd `
+                -ServerInstance $SqlServer `
+                -Query "CREATE USER [$Env:USERDOMAIN\$SqlUser$] for login [$Env:USERDOMAIN\$SqlUser$] WITH DEFAULT_SCHEMA=[dbo];" `
+                -Database $DatabaseName
+            Invoke-Sqlcmd `
+                -ServerInstance $SqlServer `
+                -Query "EXEC sp_addrolemember 'db_owner', '$Env:USERDOMAIN\$SqlUser$';" `
+                -Database $DatabaseName
+        }
     }
     catch {
         if ($_.Exception.InnerException -ne $null) {
             if ($_.Exception.InnerException.Number -eq 15023) {
-                if (-Not $Silent) {
-                    Write-Warning "User [$Env:USERDOMAIN\$SqlUser$] for database $Database already present on $SqlServer"
+                if (-Not $Quiet) {
+                    Write-Warning "User [$Env:USERDOMAIN\$SqlUser$] for database $DatabaseName already present on $SqlServer"
                 }
                 return
             }

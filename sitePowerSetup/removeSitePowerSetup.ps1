@@ -11,13 +11,15 @@ function Remove-SitePowerSetup {
         [string]
         $AppName = $( Read-Host "Web application name" ),
         
-        [Parameter(ValueFromPipelineByPropertyName)]
+        [Parameter(ValueFromPipelineByPropertyName,
+                   Position=1)]
         [ValidateNotNullOrEmpty()]
         [PSDefaultValue(Help = 'Uses AppName by default')]
         [string]
         $AccountName = $AppName,
         
-        [Parameter(ValueFromPipelineByPropertyName)]
+        [Parameter(ValueFromPipelineByPropertyName,
+                   Position=2)]
         [ValidateNotNullOrEmpty()]
         [PSDefaultValue(Help = 'Uses AppName by default')]
         [string]

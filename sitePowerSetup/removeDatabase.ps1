@@ -6,20 +6,15 @@ function Remove-Database {
         [switch] $Quiet
     )
 
-    Begin {
-        # We do this to allow Quiet to silence Remove-AdServiceAccount without 
-        # disabling the -WhatIf param
-        if (-Not $WhatIfPreference -and $Quiet) {
-            $ConfirmPreference = 'None'
-        }
-    }
-
     Process {
         try {
-            if ($PSCmdlet.ShouldProcess("Disconnect current database connections?")) {
+            if (-Not $WhatIfPreference -and $Quiet) {
                 Invoke-Sqlcmd -ServerInstance $SqlServer -Query "ALTER DATABASE [$DatabaseName] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;"
-                $ConfirmPreference = 'None'
             }
+            elseIf ($WhatIfPreference -and $Quiet) {
+                Write-Output "What if: Would run ALTER DATABASE [$DatabaseName] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; on $SqlServer"
+            }
+
             if ($PSCmdlet.ShouldProcess("Drop database $DatabaseName on server $SqlServer ?")) {
                 Invoke-Sqlcmd -ServerInstance $SqlServer -Query "DROP DATABASE [$DatabaseName]"
             }

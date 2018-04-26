@@ -18,15 +18,17 @@
 # Optional database name, defaults to AppName
 #
 #.EXAMPLE
-# Invoke-WebAppSetup MyWebApp
-#
+# New-SitePowerSetup MyWebApp
+# New-SitePowerSetup MyWebApp MyWebAppAccountName MyWebAppDbName -Quiet
+# New-SitePowerSetup MyWebApp -PhysicalPath E:\MyAppFolder -Quiet
+# 
 #.NOTES
-#General notes
+# General notes
 ##############################
 function New-SitePowerSetup {
     [CmdletBinding(SupportsShouldProcess)]
     [Alias("New-Site", "New-App")]
-    param (
+    Param (
         [Parameter(ValueFromPipeline,
                    ValueFromPipelineByPropertyName,
                    Position=0)]
@@ -35,19 +37,22 @@ function New-SitePowerSetup {
         [string]
         $AppName = $( Read-Host "Web application name" ),
 
-        [Parameter(ValueFromPipelineByPropertyName)]
-        [ValidateNotNullOrEmpty()]
+        [Parameter(ValueFromPipelineByPropertyName,
+                   Position=1)]
+        [ValidateLength(1,15)]
         [PSDefaultValue(Help = 'Uses AppName by default')]
         [string]
         $AccountName = $AppName,
-        
-        [Parameter(ValueFromPipelineByPropertyName)]
+
+        [Parameter(ValueFromPipelineByPropertyName,
+                   Position=2)]
         [ValidateNotNullOrEmpty()]
         [PSDefaultValue(Help = 'Uses AppName by default')]
         [string]
         $DatabaseName = $AppName,
 
-        [Parameter(ValueFromPipelineByPropertyName)]
+        [Parameter(ValueFromPipelineByPropertyName,
+                   Position=3)]
         [ValidateNotNullOrEmpty()]
         [Alias("Path", "Directory", "Folder")]
         [string]

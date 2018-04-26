@@ -27,7 +27,7 @@ function New-MsaSetup {
         [Parameter(ValueFromPipeline,
                    ValueFromPipelineByPropertyName,
                    Position=0)]
-        [ValidateNotNullOrEmpty()]
+        [ValidateLength(1,15)]
         [Alias("Name")]
         [string]
         $AccountName = $( Read-Host "Service account name" ),
@@ -50,26 +50,24 @@ function New-MsaSetup {
         $curDC = Get-ADDomainController
         $MSAFQDN = "$AccountName." + $adDomain.DNSRoot
     
-        $accountExists = $False
-        try {
+        $msa = Get-ADServiceAccount -Filter "samAccountName -eq '$AccountName$' " -Server $curDC
+
+        if ($msa -eq $null) {
             New-ADServiceAccount `
                 -Name $AccountName `
                 -DNSHostName $MSAFQDN `
                 -PrincipalsAllowedToRetrieveManagedPassword $MSAGroupName `
                 -Server $curDC
+        
+            $msa = Get-ADServiceAccount -Filter "samAccountName -eq '$AccountName$' " -Server $curDC
         }
-        catch {
+        else {
             if (-Not $Quiet) {
                 Write-Warning "MSA already present in active directory"
             }
-            $accountExists = $True
         }
-    
-        $msa = Get-ADServiceAccount -Filter "samAccountName -eq '$AccountName$' " -Server $curDC
         
-        # If the account already exists, we assume it was created with this script and 
-        # has already been synced across the domain
-        if (-Not $accountExists -and (-not $WhatIfPreference)) {
+        if (-not $WhatIfPreference) {
             Get-ADDomainController `
                 -Filter { HostName -ne $curDC.HostName } | 
             ForEach-Object {

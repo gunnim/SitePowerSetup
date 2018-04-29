@@ -3,17 +3,18 @@ function New-IISSetup {
     Param (
         [Parameter(ValueFromPipeline,
                    ValueFromPipelineByPropertyName,
-                   Position=0)]
+                   Position=0,
+                   Mandatory)]
         [ValidateNotNullOrEmpty()]
         [Alias("Site", "Name")]
         [string]
-        $AppName = $( Read-Host "Web application name" ),
+        $AppName,
         
         [Parameter(ValueFromPipelineByPropertyName)]
-        [ValidateNotNullOrEmpty()]
+        [ValidateLength(1,15)]
         [PSDefaultValue(Help = 'Uses AppName by default')]
         [string]
-        $AccountName = $AppName,
+        $AccountName,
 
         [Parameter(ValueFromPipelineByPropertyName)]
         [Alias("Path", "Directory", "Folder")]
@@ -31,73 +32,78 @@ function New-IISSetup {
     }
 
     Process {
+        if ([string]::IsNullOrEmpty($AccountName)) {
+            $AccountName = $AppName
+        }
+
         if ([string]::IsNullOrEmpty($null)) {
-            $PhysicalPath = Get-Folder $Env:USERPROFILE
+            $PhysicalPath = Get-Folder
         }
         elseIf (-Not (Test-Path $PhysicalPath)) {
             Write-Warning 'Invalid path supplied'
-            $PhysicalPath = Get-Folder $Env:USERPROFILE
+            $PhysicalPath = Get-Folder
         }
 
-        if ($PhysicalPath) {
-            try {
-                $result = New-WebAppPool $AppName
+        # Local IIS setup
+        New-WebAppPoolHelper `
+            -AppName $AppName `
+            -AccountName $AccountName `
+            -Quiet:$Quiet
+        New-WebSiteHelper `
+            -AppName $AppName `
+            -PhysicalPath $PhysicalPath `
+            -Binding $LocalSiteBinding `
+            -Quiet:$Quiet
 
-                # no null errors in whatif mode
-                Write-Verbose !$result
-            }
-            catch {
-                if (($_.Exception.PSObject.Properties.name -match 'ErrorCode' -and 
-                $_.Exception.ErrorCode -eq -2147024713) -or 
-                $_.CategoryInfo.Category -eq [System.Management.Automation.ErrorCategory]::InvalidArgument) {
-                    if (-Not $Quiet) {
-                        Write-Warning "ApplicationPool with name $AppName already exists"
-                    }
-                }
-                else {
-                    throw $_
-                }
-            }
-    
-            # Set AppPool Identity
-            if ($WhatIfPreference) {
-                Write-Output "What if: Would Set-ItemProperty 'processModel' on IIS:\AppPools\$AppName to value " + 
-                    "@{userName = '$Env:USERDOMAIN\$AccountName$'; password = ''; identitytype = 3}"
-            }
-            else {
-                Set-ItemProperty IIS:\AppPools\$AppName `
-                    -name processModel `
-                    -value @{userName = "$Env:USERDOMAIN\$AccountName$"; password = ""; identitytype = 3}
-            }
-    
-            try {
-                if ($DefaultBindingSuffix -eq $null) {
-                    $DefaultBindingSuffix = "localhost.$Env:USERDNSDOMAIN"
-                }
-                $result = New-Website $AppName `
-                    -PhysicalPath $PhysicalPath `
-                    -ApplicationPool $AppName `
-                    -HostHeader "$AppName.$DefaultBindingSuffix"
+        foreach ($iisSrv in $IISServers.getEnumerator()) {
+            $s = New-PSSession -ComputerName $iisSrv.Key
 
-                Write-Verbose !$result
-            }
-            catch {
-                if (($_.Exception.PSObject.Properties.name -match 'ErrorCode' -and 
-                $_.Exception.ErrorCode -eq -2147024713) -or 
-                $_.Exception.HResult -eq -2147024809) {
-                    if (-Not $Quiet) {
-                        Write-Warning "IIS site with name $AppName already exists"
-                    }
+            # Copy local preferences over to session
+            Invoke-Command `
+                -Session $s `
+                -ScriptBlock {
+                    $ConfirmPreference = $Using:ConfirmPreference
+                    $WhatIfPreference = $Using:WhatIfPreference
+                    $ErrorActionPreference = $Using:ErrorActionPreference
+                    $VerbosePreference = $Using:VerbosePreference
                 }
-                else {
-                    throw $_
+
+            Invoke-Command `
+                -Session $s `
+                -FilePath $PSScriptRoot\testIISInstallation.ps1
+            Invoke-Command `
+                -Session $s `
+                -FilePath $PSScriptRoot\formatBinding.ps1
+            Invoke-Command `
+                -Session $s `
+                -FilePath $PSScriptRoot\iisHelpers.ps1
+
+            Invoke-Command `
+                -Session $s `
+                -ScriptBlock {
+                    Test-IISInstallation
+                }            
+            Invoke-Command `
+                -Session $s `
+                -ScriptBlock {
+                    New-WebAppPoolHelper `
+                        -AppName $Using:AppName `
+                        -AccountName $Using:AccountName `
+                        -Quiet:$Using:Quiet    
                 }
-            }
-            
-            Write-Verbose 'Successfully ensured IIS site and AppPool'
+            Invoke-Command `
+                -Session $s `
+                -ScriptBlock {
+                    New-WebSiteHelper `
+                        -AppName $Using:AppName `
+                        -PhysicalPath $Using:PhysicalPath `
+                        -Binding ($Using:iisSrv).Value `
+                        -Quiet:$Using:Quiet    
+                }
+
+            Remove-PSSession $s
         }
-        else {
-            throw 'Error getting target folder for Web App'
-        }
+
+        Write-Verbose 'Successfully ensured IIS site and AppPool'
     }
 }

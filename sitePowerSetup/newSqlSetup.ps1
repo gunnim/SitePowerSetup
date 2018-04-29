@@ -3,17 +3,18 @@
     Param (
         [Parameter(ValueFromPipeline,
                    ValueFromPipelineByPropertyName,
-                   Position=0)]
-        [ValidateNotNullOrEmpty()]
+                   Position=0,
+                   Mandatory)]
+        [ValidateLength(1,15)]
         [Alias("Name")]
         [string]
-        $AccountName = $( Read-Host "Service account name" ),
+        $AccountName,
 
         [Parameter(ValueFromPipelineByPropertyName)]
         [ValidateNotNullOrEmpty()]
         [PSDefaultValue(Help = 'Uses AccountName by default')]
         [string]
-        $DatabaseName = $AccountName,
+        $DatabaseName,
 
         [switch] $Quiet
     )
@@ -26,7 +27,12 @@
     }
 
     Process {
-        foreach ($sqlServer in $SqlDatabaseServers) {
+        if ([string]::IsNullOrEmpty($DatabaseName)) {
+            $DatabaseName = $AccountName
+        }
+
+        foreach ($sqlServer in $SqlDevelopmentServers) {
+            Write-Verbose "Creating sql database $DatabaseName, login & user [$Env:USERDOMAIN\$AccountName$] on $sqlServer"
             New-Database `
                 -SqlServer $sqlServer `
                 -DatabaseName $DatabaseName `
@@ -40,15 +46,14 @@
                 -SqlServer $sqlServer `
                 -Database $DatabaseName `
                 -Quiet:$Quiet
-            Write-Verbose "Ensured sql database, login & user on $sqlServer"
-        }
+            }
     
-        foreach ($sqlServer in $SqlLoginServers) {
+        foreach ($sqlServer in $SqlProductionServers) {
+            Write-Verbose "Creating sql login [$Env:USERDOMAIN\$AccountName$] on $sqlServer"
             New-SqlLogin `
                 -SqlLogin $AccountName `
                 -SqlServer $sqlServer `
                 -Quiet:$Quiet
-            Write-Verbose "Ensured sql login on $sqlServer"
         }
     }
 }

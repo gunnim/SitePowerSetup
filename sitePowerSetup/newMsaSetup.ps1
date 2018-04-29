@@ -26,11 +26,12 @@ function New-MsaSetup {
     Param (
         [Parameter(ValueFromPipeline,
                    ValueFromPipelineByPropertyName,
-                   Position=0)]
+                   Position=0,
+                   Mandatory)]
         [ValidateLength(1,15)]
         [Alias("Name")]
         [string]
-        $AccountName = $( Read-Host "Service account name" ),
+        $AccountName,
 
         [switch] $Quiet
     )
@@ -76,14 +77,18 @@ function New-MsaSetup {
                     -Source $curDC.HostName `
                     -Destination $_.hostname
             }
-            
-            Invoke-Command `
-                -ComputerName $IISServers `
-                -ScriptBlock {param($p1) Install-ADServiceAccount -Identity $p1} `
-                -ArgumentList $msa.DistinguishedName
+
+            foreach ($iisSrv in $IISServers.getEnumerator()) {
+                Invoke-Command `
+                    -ComputerName $iisSrv.Key `
+                    -ScriptBlock {
+                        Install-ADServiceAccount `
+                            -Identity ($Using:msa).DistinguishedName
+                    }
+            }
         }
         elseIf ($WhatIfPreference) {
-            Write-Output "What if: Would be Syncing AD-Object and Invoking Install-ADServiceAccount on $IISServers"
+            Write-Output ("What if: Would be Syncing AD-Object and Invoking Install-ADServiceAccount on " + $IISServers.Keys)
         }
 
         if ($WhatIfPreference) {

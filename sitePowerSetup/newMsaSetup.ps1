@@ -1,26 +1,56 @@
-##############################
-#.SYNOPSIS
-# Creates a group managed service account in active directory
-#
-#.DESCRIPTION
-# This script creates a group managed service account in active directory,
-# installs it onto the local computer and also on all configured IIS servers.
-#
-#.PARAMETER Silent
-#Parameter description
-#
-#.PARAMETER AccountName
-#Parameter description
-#
-#.EXAMPLE
-# New-MsaSetup myMsaAccount
+<#
+.SYNOPSIS
+Sets up a gMSA with the given project name
 
-#.NOTES
-# This script requires administrative rights and remote server administration tools.
-# If the tools are not present, the script will attempt to install them.
-# If an MSA is created, the script will execute Sync-ADObject to ensure that the target IIS servers can see the object.
-# If the MSA already exists in AD, we assume it was created with this script and has therefore already been setup on the configured IIS servers.
-##############################
+.DESCRIPTION
+Please edit configuration.ps1 before first use!
+
+This script will attempt the following tasks:
+- Create a new group managed service account in Active Directory.
+- Install the gMSA locally and on the specified IISServers.
+
+This script fully supports the -WhatIf parameter but also -Confirm and -Verbose
+
+Setup:
+Ensure a security group exists in active directory with the same name as the value for MSAGroupName in configuration.ps1
+This security group should contain all servers listed in the IISServers variable
+
+.PARAMETER AccountName
+Managed service account name
+
+.PARAMETER Quiet
+Minimal output
+
+.EXAMPLE
+New-MsaSetup MyWebApp
+Sets up a gMSA with the given project name
+
+.EXAMPLE
+New-MsaSetup MyWebApp MyWebAppAccountName -Quiet
+Sets up a gMSA, Sql & IIS using MyWebApp for the IIS site and appPool,
+MyWebAppAccountName for the managed service account 
+while suppressing all non fatal output.
+
+.EXAMPLE
+New-MsaSetup MyWebApp -Verbose
+Sets up a gMSA with the given project name,
+displaying verbose information during script execution.
+
+.EXAMPLE
+'Site1','Site2' | New-MsaSetup
+Setup multiple sites
+
+.NOTES
+This script requires elevated status.
+
+This script requires the following tools:
+RSAT - It will attempt to install them if missing but this may require a restart.
+
+Managed service accounts require an active directory domain.
+
+.LINK
+https://github.com/gunnim/SitePowerSetup
+#>
 function New-MsaSetup {
     [CmdletBinding(SupportsShouldProcess)]
     Param (
@@ -45,7 +75,7 @@ function New-MsaSetup {
     }
 
     Process {
-        Write-Verbose "Creating gMSA"
+        Write-Verbose "Creating group managed service account"
 
         $adDomain = Get-ADDomain
         $curDC = Get-ADDomainController

@@ -1,13 +1,14 @@
 <#
 .SYNOPSIS
-Deletes a previously created MSA, local IIS site and related Sql data.
+Deletes a previously created MSA, IIS sites and related Sql data.
 
 .DESCRIPTION
 This script will attempt the following tasks:
 - Delete the previously created group managed service account from active directory.
-- Remove the msa Sql login and project database from the specified SqlDevelopmentServers & SqlProductionServers, disconnecting active sessions from the databases if necessary.
-- Remove the local IIS AppPool for the given project.
-- Remove the local IIS Site for the given project.
+- Remove the msa Sql login and project database from the specified SqlDevelopmentServers, disconnecting active sessions from the databases if necessary.
+- Remove the msa Sql login from the specified SqlProductionServers.
+- Remove IIS AppPools locally and on configured IISServers for the given project.
+- Remove IIS Sites locally and on configured IISServers for the given project.
 
 The script has been designed to handle cases were some steps have been previously completed.
 F.x. if the gMSA has been removed previously and the sql data already deleted it is still safe to run the script with the same parameters as before on a new computer.
@@ -38,7 +39,7 @@ Optional database name, defaults to AppName
 
 .EXAMPLE
 Remove-SitePowerSetup MyWebApp
-Deletes a previously created MSA, local IIS site and related Sql data.
+Deletes a previously created MSA, IIS sites and related Sql data.
 
 .EXAMPLE
 Remove-SitePowerSetup MyWebApp MyWebAppAccountName MyWebAppDbName -Quiet
@@ -49,11 +50,11 @@ while suppressing all non fatal output.
 
 .EXAMPLE
 Remove-SitePowerSetup MyWebApp -Verbose
-Deletes a previously created MSA, local IIS site and related Sql data while
+Deletes a previously created MSA, IIS sites and related Sql data while
 displaying verbose information during script execution.
 
 .Example
-Site1,Site2 | Remove-Site
+'Site1','Site2' | Remove-Site
 Remove multiple sites
 
 .NOTES
@@ -107,16 +108,21 @@ function Remove-SitePowerSetup {
         $ErrorActionPreference = 
         [System.Management.Automation.ActionPreference]::Stop
 
+        Install-RsatTools
         Test-Sqlcmd
         Test-IISInstallation
         Test-AdminRights
     }
 
     Process {
-        if ([string]::IsNullOrEmpty($AccountName)) {
+        # Init values
+        # Done here to support piping of multiple objects
+        if ([string]::IsNullOrEmpty($AccountName) -or
+        $AccountName -eq '__change_me__') {
             $AccountName = $AppName
         }
-        if ([string]::IsNullOrEmpty($DatabaseName)) {
+        if ([string]::IsNullOrEmpty($DatabaseName) -or
+        $DatabaseName -eq '__change_me__') {
             $DatabaseName = $AppName
         }
 
@@ -125,7 +131,7 @@ function Remove-SitePowerSetup {
         Remove-MSA -AccountName $AccountName -Quiet:$Quiet
     
         foreach ($sqlServer in $SqlDevelopmentServers) {
-            Write-Verbose "Removing SQL login & database on $sqlServer"
+            Write-Verbose "Removing SQL login [$Env:USERDOMAIN\$AccountName$] & database $DatabaseName on $sqlServer"
             Remove-Database `
                 -DatabaseName $DatabaseName `
                 -SqlServer $sqlServer `
@@ -137,20 +143,20 @@ function Remove-SitePowerSetup {
         }
     
         foreach ($sqlServer in $SqlProductionServers) {
-            Write-Verbose "Removing SQL login on $sqlServer"
+            Write-Verbose "Removing SQL login [$Env:USERDOMAIN\$AccountName$] on $sqlServer"
             Remove-SqlLogin `
                 -SqlLogin $AccountName `
                 -SqlServer $sqlServer `
                 -Quiet:$Quiet
         }
     
-        Write-Verbose 'Removing IIS site + AppPool'
+        Write-Verbose "Removing IIS site + AppPool $AppName locally"
     
         Remove-WebAppPoolHelper -AppName $AppName -Quiet:$Quiet
         Remove-WebSiteHelper -AppName $AppName -Quiet:$Quiet
 
         foreach ($iisSrv in $IISServers.getEnumerator()) {
-            Write-Verbose ("Removing IIS Site + AppPool on " + $iisSrv.Key)
+            Write-Verbose ("Removing IIS Site + AppPool $AppName on " + $iisSrv.Key)
 
             $s = New-PSSession -ComputerName $iisSrv.Key
 
@@ -164,6 +170,7 @@ function Remove-SitePowerSetup {
                     $VerbosePreference = $Using:VerbosePreference
                 }
 
+            # Initialize session with required scripts
             Invoke-Command `
                 -Session $s `
                 -FilePath $PSScriptRoot\testIISInstallation.ps1
@@ -193,6 +200,10 @@ function Remove-SitePowerSetup {
 
             Remove-PSSession $s
         }
+
+        # Without this the following variables will keep their value on subsequent iterations of the process block
+        $AccountName = '__change_me__'
+        $DatabaseName = '__change_me__'
 
         Write-Verbose "Successfully ensured non-existence of MSA, Sql data and IIS Site + AppPool for $AppName"
     }

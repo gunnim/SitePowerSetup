@@ -10,7 +10,9 @@ function New-WebAppPoolHelper {
         $result = New-WebAppPool $AppName
 
         # no null errors in whatif mode
-        Write-Verbose !$result
+        if ($result -ne $null) {
+            Write-Verbose $result
+        }
     }
     catch {
         if (($_.Exception.PSObject.Properties.name -match 'ErrorCode' -and 
@@ -52,24 +54,38 @@ function New-WebSiteHelper {
     try {
         $Binding = Format-Binding $Binding $AppName
 
-        $result = New-Website $AppName `
+        # Since we need the -Force parameter to be able to
+        # create a site with an empty physicalPath
+        # We must ensure we are not overwriting a previously created site
+        if ((Get-Website $AppName) -eq $null) {
+            $result = New-Website $AppName `
             -PhysicalPath $PhysicalPath `
             -ApplicationPool $AppName `
             -HostHeader $Binding `
             -Force
 
-        Write-Verbose !$result
-    }
-    catch {
-        if (($_.Exception.PSObject.Properties.name -match 'ErrorCode' -and 
-            $_.Exception.ErrorCode -eq -2147024713) -or 
-            $_.Exception.HResult -eq -2147024809) {
-            if (-Not $Quiet) {
-                Write-Warning "IIS site with name $AppName already exists"
+            # no null errors in whatif mode
+            if ($result -ne $null) {
+                Write-Verbose $result
             }
         }
-        else {
-            throw $_
+        elseIf (-Not $Quiet) {
+            Write-Warning "IIS site with name $AppName already exists"
         }
+    }
+    catch {
+
+        # The following block is rendered useless because
+        # we use the force parameter, therefore never hitting duplicate errors
+        # if (($_.Exception.PSObject.Properties.name -match 'ErrorCode' -and 
+        #     $_.Exception.ErrorCode -eq -2147024713) -or 
+        #     $_.Exception.HResult -eq -2147024809) {
+        #     if (-Not $Quiet) {
+        #         Write-Warning "IIS site with name $AppName already exists"
+        #     }
+        # }
+        # else {
+            throw $_
+        # }
     }
 }

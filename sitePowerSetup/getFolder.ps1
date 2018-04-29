@@ -3,7 +3,7 @@ Function Get-Folder {
 
     $foldername = New-Object System.Windows.Forms.FolderBrowserDialog
     $foldername.rootfolder = "MyComputer"
-    $foldername.Description = "Choose IIS site directory"
+    $foldername.Description = "Choose local IIS site directory"
 
     if($foldername.ShowDialog() -eq "OK")
     {

@@ -8,6 +8,7 @@ $script:SqlProductionServers = @(
 )
 
 # Hash table of IIS servers that will host the MSA
+# All servers should be members of the MSAGroupName AD security group configured below
 # Key is the iis server hostname
 # Value becomes the site binding
 # Substitutions:

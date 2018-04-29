@@ -18,7 +18,7 @@ function Install-RsatTools {
         if ($PSCmdlet.ShouldProcess("Installation of Windows Remote Server Administration Tools may require a restart, would you like to continue?")) {
             $web = Invoke-WebRequest https://www.microsoft.com/en-us/download/confirmation.aspx?id=45520
 
-            $MachineOS = (Get-WmiObject Win32_OperatingSystem).Name
+            $MachineOS = (Get-CimInstance Win32_OperatingSystem).Name
     
             # Check for Windows Server 2012 R2
             if ($MachineOS -like "*Microsoft Windows Server*") {

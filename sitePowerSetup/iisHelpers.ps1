@@ -1,5 +1,5 @@
 function New-WebAppPoolHelper {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     Param (
         [string] $AppName,
         [string] $AccountName,
@@ -44,6 +44,7 @@ function New-WebAppPoolHelper {
 }
 
 function New-WebSiteHelper {
+    [CmdletBinding(SupportsShouldProcess)]
     Param (
         [string] $AppName,
         [string] $PhysicalPath,

@@ -1,4 +1,5 @@
 function Remove-WebAppPoolHelper {
+    [CmdletBinding(SupportsShouldProcess)]
     param (
         [switch] $Quiet,
         [string] $AppName
@@ -19,6 +20,7 @@ function Remove-WebAppPoolHelper {
 }
 
 function Remove-WebSiteHelper {
+    [CmdletBinding(SupportsShouldProcess)]
     param (
         [switch] $Quiet,
         [string] $AppName

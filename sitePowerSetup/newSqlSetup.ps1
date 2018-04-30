@@ -49,7 +49,7 @@ Configures sql servers for multiple projects
 This script requires elevated status.
 
 This script requires the following tools:
-SqlServer module - Suggests Install-module SqlServer
+SqlServer module - Runs Install-Module SqlServer
 
 Managed service accounts require an active directory domain.
 

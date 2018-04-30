@@ -24,3 +24,7 @@ $script:LocalSiteBinding = '%s.localhost.%d'
 
 # Active Directory security group of which member computers have the right to host the MSA
 $script:MSAGroupName = 'IIS Servers'
+
+# Path to the latest windows RSAT for desktop systems
+# Grab from here https://www.microsoft.com/en-us/download/confirmation.aspx?id=45520
+$script:RSATFilePath = '\\srv1\fileShare\WindowsTH-RSAT_WS_1709-x64.msu'

@@ -74,7 +74,7 @@ This script requires elevated status.
 This script requires the following tools:
 RSAT - It will attempt to install them if missing but this may require a restart.
 WebAdministration - Will assume a faulty IIS installation if missing
-SqlServer module - Suggests Install-module SqlServer
+SqlServer module - Runs Install-Module SqlServer
 
 Managed service accounts require an active directory domain.
 

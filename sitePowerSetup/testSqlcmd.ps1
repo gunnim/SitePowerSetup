@@ -6,6 +6,6 @@ function Test-Sqlcmd {
         -ErrorAction SilentlyContinue
 
     if ($hasSqlPsTools -eq $null) {
-        throw 'Sql PowerShell commands missing, please Install-Module SqlServer'
+        Install-Module SqlServer
     }
 }

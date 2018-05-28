@@ -101,7 +101,7 @@ function New-IISSetup {
 
     Process {
         if ([string]::IsNullOrEmpty($AccountName) -or
-        $AccountName -eq '__will_replace__') {
+        $AccountName -eq '__willreplace__') {
             $AccountName = $AppName
         }
 
@@ -177,6 +177,6 @@ function New-IISSetup {
         }
 
         # Without this AccountName will keep it's value on subsequent iterations of the process block
-        $AccountName = '__will_replace__'
+        $AccountName = '__willreplace__'
     }
 }

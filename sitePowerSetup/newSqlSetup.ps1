@@ -85,7 +85,7 @@ function New-SqlSetup {
 
     Process {
         if ([string]::IsNullOrEmpty($DatabaseName) -or
-        $DatabaseName -eq '__will_replace__') {
+        $DatabaseName -eq '__willreplace__') {
             $DatabaseName = $AccountName
         }
 
@@ -126,6 +126,6 @@ function New-SqlSetup {
         }
 
         # Without this DatabaseName will keep it's value on subsequent iterations of the process block
-        $DatabaseName = '__will_replace__'
+        $DatabaseName = '__willreplace__'
     }
 }

@@ -3,7 +3,7 @@ $script:SqlDevelopmentServers = @(
     # 'myDevSqlServer',
 )
 
-# Sql servers where we only create an sql login
+# Sql servers where we create an sql login, and create an sql user if the database already exists.
 $script:SqlProductionServers = @(
 )
 
@@ -15,14 +15,18 @@ $script:SqlProductionServers = @(
 # %s AppName
 # %n A random 3 digit number
 # %d $Env:UserDnsDomain
-# Leave empty to use the localbinding, this way we never create sites with bindings overriding the Default Web Site
+# Leaving empty uses the LocalSiteBinding
+# That way we never create sites with empty bindings overriding the Default Web Site
 $script:IISServers = @{
 #    'IISSrv1' = "%s-%n.test.domain.info"
 #    'IISSrv2' = "%s.staging.%d"
 }
 $script:LocalSiteBinding = '%s.localhost.%d'
 
-# Active Directory security group of which member computers have the right to host the MSA
+# Create am Active Directory security group that matches the configured value below.
+# This group should contain all computers allowed to host the MSA.
+# In addition to dedicated IIS servers, 
+# all development workstations that might run these scripts will also need to be members of the group.
 $script:MSAGroupName = 'IIS Servers'
 
 # Path to the latest windows RSAT for desktop systems

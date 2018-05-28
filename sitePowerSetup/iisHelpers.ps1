@@ -60,10 +60,10 @@ function New-WebSiteHelper {
         # We must ensure we are not overwriting a previously created site
         if ((Get-Website $AppName) -eq $null) {
             $result = New-Website $AppName `
-            -PhysicalPath $PhysicalPath `
-            -ApplicationPool $AppName `
-            -HostHeader $Binding `
-            -Force
+                -PhysicalPath $PhysicalPath `
+                -ApplicationPool $AppName `
+                -HostHeader $Binding `
+                -Force
 
             # no null errors in whatif mode
             if ($result -ne $null) {

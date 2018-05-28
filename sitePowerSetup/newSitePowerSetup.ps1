@@ -130,7 +130,7 @@ function New-SitePowerSetup {
 
     Begin {
         $ErrorActionPreference = 
-        [System.Management.Automation.ActionPreference]::Stop
+            [System.Management.Automation.ActionPreference]::Stop
 
         Test-Sqlcmd
         Test-IISInstallation
@@ -141,11 +141,11 @@ function New-SitePowerSetup {
         # Init values
         # Done here to support piping of multiple objects
         if ([string]::IsNullOrEmpty($AccountName) -or
-        $AccountName -eq '__change_me__') {
+        $AccountName -eq '__will_replace__') {
             $AccountName = $AppName
         }
         if ([string]::IsNullOrEmpty($DatabaseName) -or
-        $DatabaseName -eq '__change_me__') {
+        $DatabaseName -eq '__will_replace__') {
             $DatabaseName = $AppName
         }
 
@@ -163,8 +163,8 @@ function New-SitePowerSetup {
             -Quiet:$Quiet
 
         # Without this the following variables will keep their value on subsequent iterations of the process block
-        $AccountName = '__change_me__'
-        $DatabaseName = '__change_me__'
+        $AccountName = '__will_replace__'
+        $DatabaseName = '__will_replace__'
 
         Write-Verbose "Successfully ensured existence of MSA, Sql data and IIS Site + AppPool for $AppName"
     }

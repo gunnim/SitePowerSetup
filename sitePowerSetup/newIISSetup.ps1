@@ -101,7 +101,7 @@ function New-IISSetup {
 
     Process {
         if ([string]::IsNullOrEmpty($AccountName) -or
-        $AccountName -eq '__change_me__') {
+        $AccountName -eq '__will_replace__') {
             $AccountName = $AppName
         }
 
@@ -168,7 +168,7 @@ function New-IISSetup {
                 -ScriptBlock {
                     New-WebSiteHelper `
                         -AppName $Using:AppName `
-                        -PhysicalPath $Using:PhysicalPath `
+                        -PhysicalPath $null `
                         -Binding ($Using:iisSrv).Value `
                         -Quiet:$Using:Quiet    
                 }
@@ -177,6 +177,6 @@ function New-IISSetup {
         }
 
         # Without this AccountName will keep it's value on subsequent iterations of the process block
-        $AccountName = '__change_me__'
+        $AccountName = '__will_replace__'
     }
 }

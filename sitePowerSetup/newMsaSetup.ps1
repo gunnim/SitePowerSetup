@@ -68,7 +68,7 @@ function New-MsaSetup {
 
     Begin {
         $ErrorActionPreference = 
-		[System.Management.Automation.ActionPreference]::Stop
+		    [System.Management.Automation.ActionPreference]::Stop
 
         Test-AdminRights
         Install-RsatTools

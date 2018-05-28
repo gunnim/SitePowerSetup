@@ -78,14 +78,14 @@ function New-SqlSetup {
 
     Begin {
         $ErrorActionPreference = 
-        [System.Management.Automation.ActionPreference]::Stop
+            [System.Management.Automation.ActionPreference]::Stop
         Test-Sqlcmd
         Test-AdminRights
     }
 
     Process {
         if ([string]::IsNullOrEmpty($DatabaseName) -or
-        $DatabaseName -eq '__change_me__') {
+        $DatabaseName -eq '__will_replace__') {
             $DatabaseName = $AccountName
         }
 
@@ -112,9 +112,20 @@ function New-SqlSetup {
                 -SqlLogin $AccountName `
                 -SqlServer $sqlServer `
                 -Quiet:$Quiet
+
+            try {
+                New-SqlUser `
+                    -SqlUser $AccountName `
+                    -SqlServer $sqlServer `
+                    -Database $DatabaseName `
+                    -Quiet:$Quiet
+
+                Write-Verbose "Successfully created SqlUser on $sqlServer for $DatabaseName"
+            }
+            catch {}
         }
 
         # Without this DatabaseName will keep it's value on subsequent iterations of the process block
-        $DatabaseName = '__change_me__'
+        $DatabaseName = '__will_replace__'
     }
 }

@@ -115,6 +115,8 @@ function New-IISSetup {
 
         Write-Verbose "Creating IIS site + AppPool $AppName locally"
 
+        Start-IISCommitDelay
+
         # Local IIS setup
         New-WebAppPoolHelper `
             -AppName $AppName `
@@ -125,6 +127,47 @@ function New-IISSetup {
             -PhysicalPath $PhysicalPath `
             -Binding $LocalSiteBinding `
             -Quiet:$Quiet
+
+        # The following causes IISAdministration to refresh allowing us to
+        # add bindings to the created site
+        Stop-IISCommitDelay
+
+        if ($CreateSelfSignedCertificateBindingLocally) {
+
+            Write-Verbose ("Creating self signed certificate and assigning to new https binding for local iis site")
+
+            $Binding = Format-Binding $LocalSiteBinding $AppName
+
+            $crt = New-SelfSignedCertificate `
+                -Subject $Binding `
+                -TextExtension @("2.5.29.17={text}DNS=$Binding") `
+                -CertStoreLocation "cert:\LocalMachine\My"
+
+            $store = New-Object System.Security.Cryptography.X509Certificates.X509Store(
+                [System.Security.Cryptography.X509Certificates.StoreName]::Root,
+                "localmachine"
+            )
+            $store.Open(
+                [System.Security.Cryptography.X509Certificates.OpenFlags]::OpenExistingOnly +
+                [System.Security.Cryptography.X509Certificates.OpenFlags]::MaxAllowed
+            )
+            if (-Not $WhatIfPreference) {
+                $store.Add($crt)
+            }
+            $store.Dispose()
+
+            if ($WhatIfPreference) {
+                Write-Output "What if: Would create New-IISSiteBinding on IIS:\Site\$AppName with BindingInformation '*:443:$Binding'"
+            }
+            else {
+                New-IISSiteBinding -Name $AppName `
+                    -BindingInformation "*:443:$Binding" `
+                    -CertificateThumbPrint $crt.Thumbprint `
+                    -CertStoreLocation "Cert:\LocalMachine\My" `
+                    -Protocol https `
+                    -SslFlag "Sni"
+            }
+        }
 
         foreach ($iisSrv in $IISServers.getEnumerator()) {
             Write-Verbose ("Creating IIS Site + AppPool $AppName on " + $iisSrv.Key)

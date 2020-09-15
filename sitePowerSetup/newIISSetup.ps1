@@ -138,34 +138,42 @@ function New-IISSetup {
 
             $Binding = Format-Binding $LocalSiteBinding $AppName
 
-            $crt = New-SelfSignedCertificate `
-                -Subject $Binding `
-                -TextExtension @("2.5.29.17={text}DNS=$Binding") `
-                -CertStoreLocation "cert:\LocalMachine\My"
+            $prevBinding = Get-IISSiteBinding -Name $AppName `
+                -BindingInformation "*:443:$Binding"
 
-            $store = New-Object System.Security.Cryptography.X509Certificates.X509Store(
-                [System.Security.Cryptography.X509Certificates.StoreName]::Root,
-                "localmachine"
-            )
-            $store.Open(
-                [System.Security.Cryptography.X509Certificates.OpenFlags]::OpenExistingOnly +
-                [System.Security.Cryptography.X509Certificates.OpenFlags]::MaxAllowed
-            )
-            if (-Not $WhatIfPreference) {
-                $store.Add($crt)
+            if ($prevBinding -eq $null) {
+                $crt = New-SelfSignedCertificate `
+                    -Subject $Binding `
+                    -TextExtension @("2.5.29.17={text}DNS=$Binding") `
+                    -CertStoreLocation "cert:\LocalMachine\My"
+    
+                $store = New-Object System.Security.Cryptography.X509Certificates.X509Store(
+                    [System.Security.Cryptography.X509Certificates.StoreName]::Root,
+                    "localmachine"
+                )
+                $store.Open(
+                    [System.Security.Cryptography.X509Certificates.OpenFlags]::OpenExistingOnly +
+                    [System.Security.Cryptography.X509Certificates.OpenFlags]::MaxAllowed
+                )
+                if (-Not $WhatIfPreference) {
+                    $store.Add($crt)
+                }
+                $store.Dispose()
+    
+                if ($WhatIfPreference) {
+                    Write-Output "What if: Would create New-IISSiteBinding on IIS:\Site\$AppName with BindingInformation '*:443:$Binding'"
+                }
+                else {
+                    New-IISSiteBinding -Name $AppName `
+                        -BindingInformation "*:443:$Binding" `
+                        -CertificateThumbPrint $crt.Thumbprint `
+                        -CertStoreLocation "Cert:\LocalMachine\My" `
+                        -Protocol https `
+                        -SslFlag "Sni"
+                }
             }
-            $store.Dispose()
-
-            if ($WhatIfPreference) {
-                Write-Output "What if: Would create New-IISSiteBinding on IIS:\Site\$AppName with BindingInformation '*:443:$Binding'"
-            }
-            else {
-                New-IISSiteBinding -Name $AppName `
-                    -BindingInformation "*:443:$Binding" `
-                    -CertificateThumbPrint $crt.Thumbprint `
-                    -CertStoreLocation "Cert:\LocalMachine\My" `
-                    -Protocol https `
-                    -SslFlag "Sni"
+            elseIf (-Not $Quiet) {
+                Write-Warning "IIS site with name $AppName already contains binding *:443:$Binding"
             }
         }
 

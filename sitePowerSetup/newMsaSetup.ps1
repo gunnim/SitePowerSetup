@@ -100,7 +100,7 @@ function New-MsaSetup {
         
         if (-not $WhatIfPreference) {
             Get-ADDomainController `
-                -Filter { HostName -ne $curDC.HostName } | 
+                -Filter { (HostName -ne $curDC.HostName) -and (Hostname -ne "THANOS.intra.vettvangur.is") } | 
             ForEach-Object {
                 Sync-ADObject `
                     -Object $msa `

@@ -89,6 +89,12 @@ function New-IISSetup {
         [string]
         $PhysicalPath,
 
+        [Parameter(ValueFromPipelineByPropertyName)]
+        [PSDefaultValue(Help = 'Uses AppName by default')]
+        [Alias("Binding")]
+        [string]
+        $BindingName,
+
         [switch] $Quiet
     )
 
@@ -107,6 +113,9 @@ function New-IISSetup {
 
         if ([string]::IsNullOrEmpty($PhysicalPath)) {
             $PhysicalPath = Get-Folder
+        }
+        if ([string]::IsNullOrEmpty($BindingName)) {
+            $BindingName = $AppName
         }
         elseIf (-Not (Test-Path $PhysicalPath)) {
             Write-Warning 'Invalid path supplied'
@@ -136,7 +145,7 @@ function New-IISSetup {
 
             Write-Verbose ("Creating self signed certificate and assigning to new https binding for local iis site")
 
-            $Binding = Format-Binding $LocalSiteBinding $AppName
+            $Binding = Format-Binding $LocalSiteBinding $BindingName
 
             $prevBinding = Get-IISSiteBinding -Name $AppName `
                 -BindingInformation "*:443:$Binding"

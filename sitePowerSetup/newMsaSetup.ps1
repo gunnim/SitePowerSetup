@@ -14,6 +14,8 @@ This script fully supports the -WhatIf parameter but also -Confirm and -Verbose
 Setup:
 Ensure a security group exists in active directory with the same name as the value for MSAGroupName in configuration.ps1
 This security group should contain all servers listed in the IISServers variable
+Unless your iis servers are AD DC's you will need to configure https://devblogs.microsoft.com/scripting/enable-powershell-second-hop-functionality-with-credssp/
+to successfully run Install-ADServiceAccount remotely
 
 .PARAMETER AccountName
 Managed service account name
@@ -63,6 +65,11 @@ function New-MsaSetup {
         [string]
         $AccountName,
 
+        [Parameter(ValueFromPipelineByPropertyName,
+                   Position=1)]
+        [System.Management.Automation.PSCredential]
+        $Credential,
+
         [switch] $Quiet
     )
 
@@ -72,6 +79,12 @@ function New-MsaSetup {
 
         Test-AdminRights
         Install-RsatTools
+
+        if ($null -eq $Credential) {
+            $Credential = Get-Credential
+        }
+        # ToDo: Implement check for wsman credssp settings, we could test if the client computer can delegate to server
+        # and verify server configuration and warn how to fix.
     }
 
     Process {
@@ -83,7 +96,7 @@ function New-MsaSetup {
     
         $msa = Get-ADServiceAccount -Filter "samAccountName -eq '$AccountName$' " -Server $curDC
 
-        if ($msa -eq $null) {
+        if ($null -eq $msa) {
             New-ADServiceAccount `
                 -Name $AccountName `
                 -DNSHostName $MSAFQDN `
@@ -111,6 +124,8 @@ function New-MsaSetup {
             foreach ($iisSrv in $IISServers.getEnumerator()) {
                 Invoke-Command `
                     -ComputerName $iisSrv.Key `
+                    -Authentication Credssp `
+                    -Credential $Credential `
                     -ScriptBlock {
                         Install-ADServiceAccount `
                             -Identity ($Using:msa).DistinguishedName

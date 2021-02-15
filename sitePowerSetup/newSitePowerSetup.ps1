@@ -30,6 +30,9 @@ This security group should contain all servers listed in the IISServers variable
 The distinction between SqlDevelopmentServers and SqlProductionServers assumes an environment where during project creation a database is initially created on a development server, and then later restored onto the production Sql server.
 In which case creating an initial db on the production server only necessitates it's deletion upon deployment.
 
+Unless your iis servers are AD DC's you will need to configure https://devblogs.microsoft.com/scripting/enable-powershell-second-hop-functionality-with-credssp/
+to successfully run Install-ADServiceAccount remotely
+
 .PARAMETER Quiet
 Minimal output
 
@@ -125,6 +128,11 @@ function New-SitePowerSetup {
         [string]
         $PhysicalPath,
 
+        [Parameter(ValueFromPipelineByPropertyName,
+                   Position=4)]
+        [System.Management.Automation.PSCredential]
+        $Credential,
+
         [switch] $Quiet
     )
 
@@ -149,7 +157,10 @@ function New-SitePowerSetup {
             $DatabaseName = $AppName
         }
 
-        New-MsaSetup -AccountName $AccountName -Quiet:$Quiet
+        New-MsaSetup `
+            -AccountName $AccountName `
+            -Credential $Credential `
+            -Quiet:$Quiet
     
         New-SqlSetup `
             -AccountName $AccountName `

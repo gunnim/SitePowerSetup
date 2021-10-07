@@ -2,7 +2,8 @@ function New-WebAppPoolHelper {
     [CmdletBinding(SupportsShouldProcess)]
     Param (
         [string] $AppName,
-        [string] $AccountName,
+        [string] $IISUsername,
+        [string] $IISPassword,
         [switch] $Quiet
     )
 
@@ -30,14 +31,14 @@ function New-WebAppPoolHelper {
     # Set AppPool Identity
     if ($WhatIfPreference) {
         Write-Output "What if: Would Set-ItemProperty 'processModel' on IIS:\AppPools\$AppName to value " + 
-        "@{userName = '$Env:USERDOMAIN\$AccountName$'; password = ''; identitytype = 3}"
+        "@{userName = '$IISUsername'; password = '$IISPassword'; identitytype = 3}"
     }
     else {
         Set-ItemProperty IIS:\AppPools\$AppName `
             -name processModel `
             -value @{
-            userName     = "$Env:USERDOMAIN\$AccountName$"
-            password     = ""
+            userName     = $IISUsername
+            password     = $IISPassword
             identitytype = 3
         }
     }
@@ -86,7 +87,7 @@ function New-WebSiteHelper {
         #     }
         # }
         # else {
-            throw $_
+        throw $_
         # }
     }
 }

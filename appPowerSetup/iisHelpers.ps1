@@ -28,7 +28,7 @@ function New-WebAppPoolHelper {
         }
     }
 
-    # Set AppPool Identity
+    # Set AppPool Identity and clr version
     if ($WhatIfPreference) {
         Write-Output "What if: Would Set-ItemProperty 'processModel' on IIS:\AppPools\$AppName to value " + 
         "@{userName = '$IISUsername'; password = '$IISPassword'; identitytype = 3}"
@@ -40,6 +40,7 @@ function New-WebAppPoolHelper {
             userName     = $IISUsername
             password     = $IISPassword
             identitytype = 3
+            managedRuntimeVersion = ""
         }
     }
 }

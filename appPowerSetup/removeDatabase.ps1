@@ -9,14 +9,14 @@ function Remove-Database {
     Process {
         try {
             if (-Not $WhatIfPreference -and $Quiet) {
-                Invoke-Sqlcmd -ServerInstance $SqlServer -Query "ALTER DATABASE [$DatabaseName] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;"
+                Invoke-Sqlcmd -ServerInstance $SqlServer -Query "ALTER DATABASE [$DatabaseName] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;" -TrustServerCertificate
             }
             elseIf ($WhatIfPreference -and $Quiet) {
                 Write-Output "What if: Would run ALTER DATABASE [$DatabaseName] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; on $SqlServer"
             }
 
             if ($PSCmdlet.ShouldProcess("Drop database $DatabaseName on server $SqlServer ?")) {
-                Invoke-Sqlcmd -ServerInstance $SqlServer -Query "DROP DATABASE [$DatabaseName]"
+                Invoke-Sqlcmd -ServerInstance $SqlServer -Query "DROP DATABASE [$DatabaseName]" -TrustServerCertificate
             }
         }
         catch {
@@ -47,7 +47,7 @@ function Remove-DatabaseWithForce {
     )
     
     if ($PSCmdlet.ShouldProcess("Database currently in use, forcibly disconnect current sessions?")) {
-        Invoke-Sqlcmd -ServerInstance $SqlServer -Query "ALTER DATABASE [$DatabaseName] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;"
-        Invoke-Sqlcmd -ServerInstance $SqlServer -Query "DROP DATABASE [$DatabaseName]"
+        Invoke-Sqlcmd -ServerInstance $SqlServer -Query "ALTER DATABASE [$DatabaseName] SET SINGLE_USER WITH ROLLBACK IMMEDIATE;" -TrustServerCertificate
+        Invoke-Sqlcmd -ServerInstance $SqlServer -Query "DROP DATABASE [$DatabaseName]" -TrustServerCertificate
     }  
 }

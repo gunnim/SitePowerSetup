@@ -8,7 +8,7 @@ function New-Database {
 
     try {
         if ($PSCmdlet.ShouldProcess("Create new database $DatabaseName on $SqlServer ?")) {
-            Invoke-Sqlcmd -ServerInstance $SqlServer -Query "CREATE DATABASE [$DatabaseName]"
+            Invoke-Sqlcmd -ServerInstance $SqlServer -Query "CREATE DATABASE [$DatabaseName]" -TrustServerCertificate
         }
     }
     catch {
@@ -38,7 +38,7 @@ function New-SqlLogin {
 
     try {
         if ($PSCmdlet.ShouldProcess("Create login $Env:USERDOMAIN\$SqlLogin$ on $SqlServer ?")) {
-            Invoke-Sqlcmd -ServerInstance $SqlServer -Query "create login [$Env:USERDOMAIN\$SqlLogin$] FROM WINDOWS" -Database "master"
+            Invoke-Sqlcmd -ServerInstance $SqlServer -Query "create login [$Env:USERDOMAIN\$SqlLogin$] FROM WINDOWS" -Database "master" -TrustServerCertificate
         }
     }
     catch {
@@ -72,11 +72,13 @@ function New-SqlUser {
             Invoke-Sqlcmd `
                 -ServerInstance $SqlServer `
                 -Query "CREATE USER [$Env:USERDOMAIN\$SqlUser$] for login [$Env:USERDOMAIN\$SqlUser$] WITH DEFAULT_SCHEMA=[dbo];" `
-                -Database $DatabaseName
+                -Database $DatabaseName `
+                -TrustServerCertificate
             Invoke-Sqlcmd `
                 -ServerInstance $SqlServer `
                 -Query "EXEC sp_addrolemember 'db_owner', '$Env:USERDOMAIN\$SqlUser$';" `
-                -Database $DatabaseName
+                -Database $DatabaseName `
+                -TrustServerCertificate
         }
     }
     catch {
